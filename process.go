@@ -7,20 +7,24 @@ package main
 type Process struct {
   name string
   shortname string
+
   sched []int
   curheight int
   period int
+  nextdeadline int
   ctime int
-  ready bool
-  complete bool
+  workdone int
+  passEE bool
 }
 
 func NewProc(n string, p int, c int) Process {
-  p := Process{
+  proc := Process{
     name:     n,
     period:   p,
     ctime:    c,
-    ready:    true,
-    complete: false,
+    workdone: 0,
   }
+  proc.sched = make([]int, 100)
+  proc.shortname = ShortName(n)
+  return proc
 }

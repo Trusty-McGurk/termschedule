@@ -14,6 +14,7 @@ type Schedule struct {
   procs []Process
   MaxVal float64
   HorizontalScale int
+  is_edf bool
 }
 
 const (
@@ -27,6 +28,7 @@ func NewSchedule() *Schedule {
   return &Schedule{
     Block:            *NewBlock(),
     HorizontalScale:  2,
+    is_edf:           true,
   }
 }
 /*
@@ -40,44 +42,42 @@ func (self *Schedule) drawLine(buf *Buffer, maxVal float64){
 */
 
 func (self *Schedule) plotAxes(buf *Buffer, maxVal float64) {
-	// draw origin cell
-	buf.SetCell(
-		NewCell(BOTTOM_LEFT, NewStyle(ColorWhite)),
-		image.Pt(self.Inner.Min.X+yAxisLabelsWidth, self.Inner.Max.Y-xAxisLabelsHeight-1),
-	)
 	// draw x axis line
-	for i := yAxisLabelsWidth + 1; i < self.Inner.Dx(); i++ {
+	for i := yAxisLabelsWidth; i < self.Inner.Dx(); i++ {
 		buf.SetCell(
 			NewCell(HORIZONTAL_DASH, NewStyle(ColorWhite)),
-			image.Pt(i+self.Inner.Min.X, self.Inner.Max.Y-xAxisLabelsHeight-1),
+			image.Pt(i+self.Inner.Min.X - 1, self.Inner.Max.Y-xAxisLabelsHeight-2),
 		)
 	}
 	// draw y axis line
 	for i := 0; i < self.Inner.Dy()-xAxisLabelsHeight-1; i++ {
 		buf.SetCell(
-			NewCell(VERTICAL_DASH, NewStyle(ColorWhite)),
+			NewCell('⎸', NewStyle(ColorWhite)),
 			image.Pt(self.Inner.Min.X+yAxisLabelsWidth, i+self.Inner.Min.Y),
 		)
 	}
+
 	// draw x axis labels
 	// draw 0
 	buf.SetString(
 		"0",
-		NewStyle(ColorWhite),
-		image.Pt(self.Inner.Min.X+yAxisLabelsWidth, self.Inner.Max.Y-1),
+		NewStyle(ColorBlue),
+		image.Pt(self.Inner.Min.X+yAxisLabelsWidth, self.Inner.Max.Y-2),
 	)
 	// draw rest
-	for x := self.Inner.Min.X + yAxisLabelsWidth + (xAxisLabelsGap)*self.HorizontalScale + 1; x < self.Inner.Max.X-1; {
-		label := fmt.Sprintf(
+  mark := 1
+	for x := self.Inner.Min.X + yAxisLabelsWidth + 5; x < self.Inner.Max.X-1; {
+    label := fmt.Sprintf(
 			"%d",
-			(x-(self.Inner.Min.X+yAxisLabelsWidth)-1)/(self.HorizontalScale)+1,
+			mark*5,
 		)
 		buf.SetString(
 			label,
-			NewStyle(ColorWhite),
-			image.Pt(x, self.Inner.Max.Y-1),
+			NewStyle(ColorBlue),
+			image.Pt(x, self.Inner.Max.Y-2),
 		)
-		x += (len(label) + xAxisLabelsGap) * self.HorizontalScale
+		x += 5
+    mark++
 	}
 	// draw y axis labels
 	//verticalScale := maxVal / float64(self.Inner.Dy()-xAxisLabelsHeight-1)
@@ -98,7 +98,7 @@ func (self *Schedule) plotSchedules(buf *Buffer) {
   for i := 0; i < len(self.procs); i++ {
     if self.procs[i].curheight != -1 {
       mark := 0
-      for j := yAxisLabelsWidth + 2; j < self.Inner.Dx(); j++ {
+      for j := yAxisLabelsWidth + 1; j < self.Inner.Dx(); j++ {
         if mark >= len(self.procs[i].sched) {
           buf.SetCell(
               NewCell(' ', NewStyle(ColorClear)),
@@ -107,15 +107,45 @@ func (self *Schedule) plotSchedules(buf *Buffer) {
         } else {
           if self.procs[i].sched[mark] == 1 {
             buf.SetCell(
-                NewCell(' ', NewStyle(ColorClear, ColorGreen)),
+                NewCell('⎸', NewStyle(ColorWhite, ColorGreen)),
+		            image.Pt(j, self.procs[i].curheight),
+	          )
+          } else if self.procs[i].sched[mark] == 2{
+            buf.SetCell(
+                NewCell('⎸', NewStyle(ColorWhite, ColorRed)),
+		            image.Pt(j, self.procs[i].curheight),
+	          )
+          } else if self.procs[i].sched[mark] == 3{
+            buf.SetCell(
+                NewCell('⎸', NewStyle(ColorMagenta, ColorClear)),
 		            image.Pt(j, self.procs[i].curheight),
 	          )
           } else {
             buf.SetCell(
-                NewCell(' ', NewStyle(ColorClear)),
+                NewCell('⎸', NewStyle(ColorWhite, ColorClear)),
 		            image.Pt(j, self.procs[i].curheight),
 	          )
           }
+        }
+        if mark != 0 && mark % 5 == 0 {
+          buf.SetCell(
+              NewCell('⎸', NewStyle(ColorBlue, ColorClear)),
+              image.Pt(j, self.procs[i].curheight + 1),
+          )
+          buf.SetCell(
+              NewCell('⎸', NewStyle(ColorBlue, ColorClear)),
+              image.Pt(j, self.procs[i].curheight - 1),
+          )
+        }
+        if mark == 0 || mark % self.procs[i].period == 0 {
+          buf.SetCell(
+              NewCell('⎸', NewStyle(ColorYellow, ColorClear)),
+              image.Pt(j, self.procs[i].curheight + 1),
+          )
+          buf.SetCell(
+              NewCell('⎸', NewStyle(ColorYellow, ColorClear)),
+              image.Pt(j, self.procs[i].curheight - 1),
+          )
         }
         mark++
       }
@@ -123,22 +153,16 @@ func (self *Schedule) plotSchedules(buf *Buffer) {
   }
 }
 
-func (self *Schedule) generateEDF() {
-  for time := 1; time < 100; time++ {
-    for proc := 0; proc < len(self.procs); proc++ {
-      
-    }
-  }
-}
-
-func (self *Schedule) generateRMS() {
-
-}
-
 func (self *Schedule) Draw(buf *Buffer){
   self.Block.Draw(buf)
-
   self.plotAxes(buf, 10)
-
-  self.plotSchedules(buf)
+  if len(self.procs) != 0 {
+    if self.is_edf {
+      self.generateEDF()
+    } else {
+      self.generateRMS()
+    }
+    self.plotSchedules(buf)
+    self.ExactAnalysis()
+  }
 }
