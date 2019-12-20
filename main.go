@@ -16,9 +16,9 @@ func main() {
 	defer ui.Close()
 
   sched := NewSchedule()
-	t1 := NewProc("T3", 16, 8)
-	t2 := NewProc("T2", 12, 3)
-	t3 := NewProc("T1", 12, 3)
+	t1 := NewProc("T3", 16, 8, *sched)
+	t2 := NewProc("T2", 12, 3, *sched)
+	t3 := NewProc("T1", 12, 3, *sched)
 	sched.AddTask(t1)
 	sched.AddTask(t2)
 	sched.AddTask(t3)
@@ -29,6 +29,7 @@ func main() {
 		sched.Title = " RMS Schedule "
 	}
 
+	eainfo := false
 	infobox := widgets.NewParagraph()
 	infobox.Title = " Task Info "
 	infobox.Text = sched.TaskInfoString()
@@ -55,6 +56,8 @@ func main() {
 			} else {
 				sched.Title = " RMS Schedule "
 			}
+		case "<C-e>":
+			eainfo = !eainfo
 		case "<Backspace>":
 			tb.Del()
 		case "<Space>":
@@ -62,11 +65,31 @@ func main() {
 		case "<Enter>":
 			sched.ParseCommand(tb.buffer)
 			tb.Clear()
+		case "<Up>":
+			if sched.windowbase < len(sched.procs) - 4 {
+				sched.windowbase++
+			}
+		case "<Down>":
+			if sched.windowbase > 0 {
+				sched.windowbase--
+			}
+		case "<Left>":
+			if sched.schedulebase > 0 {
+				sched.schedulebase -= 5
+			}
+		case "<Right>":
+			sched.schedulebase += 5
 		default:
 			tb.AddChar(e.ID)
 		}
 		terminal.Text = tb.buffer
-		infobox.Text = sched.TaskInfoString()
+		if eainfo {
+			infobox.Title = " EA Info "
+			infobox.Text = sched.ExactAnalysisString()
+		} else {
+			infobox.Title = " Task Info "
+			infobox.Text = sched.TaskInfoString()
+		}
 		ui.Render(sched, infobox, terminal)
 	}
 

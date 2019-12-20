@@ -122,7 +122,7 @@ func (self *Schedule) generateEDF() {
     self.procs[proc].nextdeadline = self.procs[proc].period
   }
 
-  for time := 0; time < 100; time++ {
+  for time := 0; time < len(self.procs[0].sched); time++ {
     tasklist := make([]*Process, len(self.procs))
     for i := 0; i < len(self.procs); i++ {
       tasklist[i] = &(self.procs[i])
@@ -167,7 +167,7 @@ func (self *Schedule) generateRMS() {
     self.procs[proc].nextdeadline = self.procs[proc].period
   }
 
-  for time := 0; time < 100; time++ {
+  for time := 0; time < len(self.procs[0].sched); time++ {
     tasklist := make([]*Process, len(self.procs))
     for i := 0; i < len(self.procs); i++ {
       tasklist[i] = &(self.procs[i])
