@@ -19,6 +19,7 @@ type Schedule struct {
   windowbase int
   schedulebase int
   schedulesize int
+  ctxswitches int
 }
 
 const (
@@ -36,6 +37,7 @@ func NewSchedule() *Schedule {
     windowbase:       0,
     schedulebase:     0,
     schedulesize:     100,
+    ctxswitches:      0,
   }
 }
 /*

@@ -3,10 +3,20 @@ package main
 import (
 	"log"
 	ui "github.com/gizak/termui/v3"
-	//"fmt"
+	"strconv"
+	"fmt"
 	"github.com/gizak/termui/v3/widgets"
 	//term "github.com/nsf/termbox-go"
 )
+
+// func main() {
+// 	sched := NewSchedule()
+// 	sched.AddTask(NewProc("t1", 8, 4, *sched))
+// 	sched.AddTask(NewProc("t2", 8, 3, *sched))
+// 	sched.AddTask(NewProc("t3", 8, 1, *sched))
+// 	sched.ExactAnalysis()
+// 	fmt.Println(sched.ExactAnalysisString())
+// }
 
 func main() {
 
@@ -16,12 +26,6 @@ func main() {
 	defer ui.Close()
 
   sched := NewSchedule()
-	t1 := NewProc("T3", 16, 8, *sched)
-	t2 := NewProc("T2", 12, 3, *sched)
-	t3 := NewProc("T1", 12, 3, *sched)
-	sched.AddTask(t1)
-	sched.AddTask(t2)
-	sched.AddTask(t3)
   sched.SetRect(0, 0, 64, 20)
 	if sched.is_edf {
 		sched.Title = " EDF Schedule "
@@ -36,12 +40,20 @@ func main() {
 	infobox.SetRect(65, 0, 80, 20)
 
 	terminal := widgets.NewParagraph()
-	terminal.Text = ""
-	terminal.SetRect(0, 20, 80, 23)
+	terminal.Text = "_"
+	terminal.SetRect(0, 20, 50, 23)
+
+	ctxswitchbox := widgets.NewParagraph()
+	ctxswitchbox.SetRect(65, 20, 80, 24)
+	ctxswitchbox.Text = "Period: " + strconv.Itoa(sched.GetPeriod()) + "\nCTXS: " + strconv.Itoa(sched.ctxswitches)
+
+	schedanalysisbox := widgets.NewParagraph()
+	schedanalysisbox.SetRect(50, 20, 65, 24)
+	schedanalysisbox.Text = ""
 
 	tb := NewTextBuffer()
 
-  ui.Render(sched, infobox, terminal)
+  ui.Render(sched, infobox, terminal, ctxswitchbox, schedanalysisbox)
 
 	uiEvents := ui.PollEvents()
 	for {
@@ -82,7 +94,7 @@ func main() {
 		default:
 			tb.AddChar(e.ID)
 		}
-		terminal.Text = tb.buffer
+		terminal.Text = tb.buffer + "_"
 		if eainfo {
 			infobox.Title = " EA Info "
 			infobox.Text = sched.ExactAnalysisString()
@@ -91,6 +103,20 @@ func main() {
 			infobox.Text = sched.TaskInfoString()
 		}
 		ui.Render(sched, infobox, terminal)
+		ctxswitchbox.Text = "Period: " + strconv.Itoa(sched.GetPeriod()) + "\nCTXS: " + strconv.Itoa(sched.ctxswitches)
+		ui.Render(ctxswitchbox)
+		analysisstring := ""
+		if len(sched.procs) > 0 {
+			total, target, pass := sched.ScheduabilityAnalysis()
+			analysisstring = fmt.Sprintf("%.2f ≤ %.2f\n", total, target)
+			if pass {
+				analysisstring += "[PASS](fg:green)"
+			} else {
+				analysisstring += "[FAIL](fg:red)"
+			}
+		}
+		schedanalysisbox.Text = analysisstring
+		ui.Render(schedanalysisbox)
 	}
 
 }

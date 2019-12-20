@@ -121,7 +121,8 @@ func (self *Schedule) generateEDF() {
   for proc := 0; proc < len(self.procs); proc++ {
     self.procs[proc].nextdeadline = self.procs[proc].period
   }
-
+  ctxs := 0
+  totalperiod := self.GetPeriod()
   for time := 0; time < len(self.procs[0].sched); time++ {
     tasklist := make([]*Process, len(self.procs))
     for i := 0; i < len(self.procs); i++ {
@@ -153,11 +154,19 @@ func (self *Schedule) generateEDF() {
       if task.workdone < task.ctime {
         task.sched[time] = 1
         task.workdone++
+        if time != 0 && time < totalperiod{
+          for _, lasttask := range tasklist {
+            if lasttask.sched[time - 1] == 1 && lasttask != task && lasttask.ctime > lasttask.workdone {
+              ctxs++
+              break
+            }
+          }
+        }
         break
       }
     }
-
   }
+  self.ctxswitches = ctxs
 }
 
 func (self *Schedule) generateRMS() {
@@ -166,7 +175,8 @@ func (self *Schedule) generateRMS() {
   for proc := 0; proc < len(self.procs); proc++ {
     self.procs[proc].nextdeadline = self.procs[proc].period
   }
-
+  ctxs := 0
+  totalperiod := self.GetPeriod()
   for time := 0; time < len(self.procs[0].sched); time++ {
     tasklist := make([]*Process, len(self.procs))
     for i := 0; i < len(self.procs); i++ {
@@ -198,9 +208,17 @@ func (self *Schedule) generateRMS() {
       if task.workdone < task.ctime {
         task.sched[time] = 1
         task.workdone++
+        if time != 0 && time < totalperiod{
+          for _, lasttask := range tasklist {
+            if lasttask.sched[time - 1] == 1 && lasttask != task && lasttask.ctime > lasttask.workdone {
+              ctxs++
+              break
+            }
+          }
+        }
         break
       }
     }
-
   }
+  self.ctxswitches = ctxs
 }

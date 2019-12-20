@@ -3,6 +3,7 @@ package main
 import(
   "strconv"
   "strings"
+  "math"
 )
 
 type TextBuffer struct {
@@ -60,6 +61,7 @@ func (self *Schedule) TaskInfoString() string {
 
 func (self *Schedule) AddTask(p Process){
   self.procs = append(self.procs, p)
+  self.schedulesize = int(math.Max(float64(self.schedulesize), float64(self.GetPeriod())))
 }
 
 func (self *Schedule) ExactAnalysisString() string {
@@ -107,9 +109,77 @@ func (self *Schedule) ParseCommand(s string){
   }
 }
 
+func (self *Schedule) GetPeriod() int {
+  if len(self.procs) == 0 {
+    return 0
+  }
+  if len(self.procs) == 1 {
+    return self.procs[0].period
+  }
+  periods := make([]int, len(self.procs))
+  for i, task := range self.procs {
+    periods[i] = task.period
+  }
+  return LCM(periods)
+}
+
 func IsNumber(s string) bool {
   if _, err := strconv.Atoi(s); err == nil {
     return true
   }
   return false
+}
+
+func GCD(a, b int) int {
+	for b != 0 {
+		t := b
+		b = a % b
+		a = t
+	}
+	return a
+}
+
+func LCM(integers []int) int {
+	result := integers[0] * integers[1] / GCD(integers[0], integers[1])
+
+	for i := 2; i < len(integers); i++ {
+		result = LCM([]int{result, integers[i]})
+	}
+
+	return result
+}
+
+func (self *Schedule) RMS_Scheduability() (float64, float64, bool) {
+  total := float64(0)
+  pass := false
+  for _, task := range self.procs {
+    total += (float64(task.ctime)/float64(task.period))
+  }
+  target := float64(len(self.procs)) * (math.Pow(2, 1/float64(len(self.procs))) - 1)
+  if total <= target {
+    pass = true
+  }
+  return total, target, pass
+}
+
+func (self *Schedule) EDF_Scheduability() (float64, bool) {
+  total := float64(0)
+  pass := false
+  for _, task := range self.procs {
+    total += (float64(task.ctime)/float64(task.period))
+  }
+  if total <= 1 {
+    pass = true
+  }
+  return total, pass
+}
+
+func (self *Schedule) ScheduabilityAnalysis() (float64, float64, bool) {
+  if self.is_edf {
+    total, pass := self.EDF_Scheduability()
+    return total, 1, pass
+  } else {
+    total, target, pass := self.RMS_Scheduability()
+    return total, target, pass
+  }
 }
