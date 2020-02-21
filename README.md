@@ -10,20 +10,20 @@ The simulator is controlled using a simple command line, as well as other keyboa
 `del X`
 - Deletes a task with task name X from the set.
 
-<Enter>
+\<Enter\>
 - Run a command.
 
-<TAB>
+\<TAB\>
 - Changes the algorithm between RMS and EDF.
 
-<Control-e>
+\<Control-e\>
 - Changes the right information window between the task info and the RMS exact analysis results.
 
-<UpArrowKey>/<DownArrowKey>
+\<UpArrowKey\>/\<DownArrowKey\>
 - If there are more tasks than can fit on the screen, scroll through them.
 
-<RightArrowKey>/<LeftArrowKey>
+\<RightArrowKey\>/\<LeftArrowKey\>
 - Scroll forward and backward through time in the schedule.
   
- <Control-c>
+ \<Control-c\>
 - Exit the program.
